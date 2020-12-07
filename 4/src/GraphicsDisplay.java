@@ -23,7 +23,7 @@ public class GraphicsDisplay extends JPanel {
     private double minY;
     private double maxY;
     // Используемый масштаб отображения
-    private double scale;
+    private double scale;private double scaleX;private double scaleY;
     // Различные стили черчения линий
     private BasicStroke graphicsStroke;
     private BasicStroke axisStroke;
@@ -86,7 +86,7 @@ public class GraphicsDisplay extends JPanel {
             ((Graphics2D)g).translate(-getSize().getHeight(), 0);
         }
 // Шаг 2 - Если данные графика не загружены (при показе компонента при запуске программы) - ничего не делать
-        if (graphicsData==null || graphicsData.length==0) return;
+        if (graphicsData==null || graphicsData.length<2) return;
 // Шаг 3 - Определить минимальное и максимальное значения для координат X и Y
 // Это необходимо для определения области пространства, подлежащей отображению
 // Еѐ верхний левый угол это (minX, maxY) - правый нижний это (maxX, minY)
@@ -107,8 +107,6 @@ public class GraphicsDisplay extends JPanel {
 и Y - сколько пикселов
 * приходится на единицу длины по X и по Y
 */
-        double scaleX;
-        double scaleY;
         if(rotate) {
             scaleX = Math.abs(getSize().getHeight() / (maxX - minX));
             scaleY = Math.abs(getSize().getWidth() / (maxY - minY));
@@ -121,7 +119,7 @@ public class GraphicsDisplay extends JPanel {
 // Выбираем за основу минимальный
         scale = Math.min(scaleX, scaleY);
 // Шаг 6 - корректировка границ отображаемой области согласно выбранному масштабу
-        if (scale==scaleX) {
+        //if (scale==scaleX) {
 /* Если за основу был взят масштаб по оси X, значит по оси Y
 делений меньше,
 * т.е. подлежащий визуализации диапазон по Y будет меньше
@@ -133,16 +131,16 @@ public class GraphicsDisplay extends JPanel {
 * 3) Набросим по половине недостающего расстояния на maxY и
 minY
 */
-            double yIncrement = ((rotate ? getSize().getWidth() : getSize().getHeight() )/ scale - (maxY - minY)) / 2;
-            maxY += yIncrement;
-            minY -= yIncrement;
-        }
-        if (scale==scaleY) {
+            //double yIncrement = ((rotate ? getSize().getWidth() : getSize().getHeight() )/ scale - (maxY - minY)) / 2;
+            //maxY += yIncrement;
+            //minY -= yIncrement;
+       //}
+        //if (scale==scaleY) {
 // Если за основу был взят масштаб по оси Y, действовать по аналогии
-            double xIncrement = ((rotate ? getSize().getHeight() : getSize().getWidth()) / scale - (maxX - minX)) / 2;
-            maxX += xIncrement;
-            minX -= xIncrement;
-        }
+         //   double xIncrement = ((rotate ? getSize().getHeight() : getSize().getWidth()) / scale - (maxX - minX)) / 2;
+        //    maxX += xIncrement;
+        //    minX -= xIncrement;
+        //}
 // Шаг 7 - Сохранить текущие настройки холста
         Graphics2D canvas = (Graphics2D) g;
         Stroke oldStroke = canvas.getStroke();
@@ -288,38 +286,41 @@ minY
         //Прорисовка делений
         double stepSX = stepX/10;
         double stepSY = stepY/10;
-        double height = (stepSX+stepSY)/6;
+        double heightX = stepSX/3;
+        double heightY = stepSY/3;
 
         var paintS = new Object(){
-            void paintS(double height, double a, double b)
+            void paintS(double heightX, double heightY, double a, double b)
             {
                 for (double i = stepSY * a; i <= maxY - b * stepSY / 2; i += b * stepSY) {
-                    line.setLine(xyToPoint(-height, i), xyToPoint(height, i));
+                    line.setLine(xyToPoint(-heightX, i), xyToPoint(heightX, i));
                     canvas.draw(line);
                 }
                 for (double i = - stepSY * a; i > minY; i -= b * stepSY) {
-                    line.setLine(xyToPoint(-height, i), xyToPoint(height, i));
+                    line.setLine(xyToPoint(-heightX, i), xyToPoint(heightX, i));
                     canvas.draw(line);
                 }
                 for (double i = stepSX * a; i <= maxX - b * stepSX / 2; i += b * stepSX) {
-                    line.setLine(xyToPoint(i, -height), xyToPoint(i, height));
+                    line.setLine(xyToPoint(i, -heightY), xyToPoint(i, heightY));
                     canvas.draw(line);
                 }
                 for (double i = - stepSX * a; i > minX; i -= b * stepSX) {
-                    line.setLine(xyToPoint(i, -height), xyToPoint(i, height));
+                    line.setLine(xyToPoint(i, -heightY), xyToPoint(i, heightY));
                     canvas.draw(line);
                 }
             }
         };
 
         //Прорисовка всех делений
-        paintS.paintS(height, 1, 1);
+        paintS.paintS(heightX,heightY, 1, 1);
         //Средние штрихи
-        height = (stepSX+stepSY)/3;
-        paintS.paintS(height, 5, 10);
+        heightX = stepSX/2;
+        heightY = stepSY/2;
+        paintS.paintS(heightX,heightY,  5, 10);
         //Краевые штрихи
-        height = (stepSX+stepSY)/2;
-        paintS.paintS(height, 10, 10);
+        heightX = stepSX/1.5;
+        heightY = stepSY/1.5;
+        paintS.paintS(heightX,heightY, 10, 10);
 // Стрелки заливаются чѐрным цветом
         canvas.setPaint(Color.BLACK);
 // Создать объект контекста отображения текста - для получения характеристик устройства (экрана)
@@ -329,22 +330,21 @@ minY
         for (double i = stepSY * 10; i < maxY - 10 * stepSY / 2; i += 10 * stepSY) {
             Rectangle2D bounds = axisFont.getStringBounds(Double.toString(i), context);
             Point2D.Double labelPos = xyToPoint(0, i);
-            canvas.drawString(df.format(i), (float)labelPos.getX() + 10, (float)(labelPos.getY() - bounds.getY()/2));
+            canvas.drawString(df.format(i), (float)labelPos.getX() + 10, (float)(labelPos.getY()));
         }
         for (double i = - stepSY * 10; i > minY; i -= 10 * stepSY) {
             Rectangle2D bounds = axisFont.getStringBounds(Double.toString(i), context);
             Point2D.Double labelPos = xyToPoint(0, i);
-            canvas.drawString(df.format(i), (float)labelPos.getX() + 10, (float)(labelPos.getY() - bounds.getY()/2));
+            canvas.drawString(df.format(i), (float)labelPos.getX() + 10, (float)(labelPos.getY()));
         }
         for (double i = stepSX * 10; i < maxX - 10 * stepSX / 2; i += 10 * stepSX) {
             Rectangle2D bounds = axisFont.getStringBounds(Double.toString(i), context);
             Point2D.Double labelPos = xyToPoint(i, 0);
-            canvas.drawString(df.format(i), (float)(labelPos.getX() - bounds.getWidth()/2), (float)(labelPos.getY() + 25));
+            canvas.drawString(df.format(i), (float)(labelPos.getX()), (float)(labelPos.getY() + 25));
         }
         for (double i = - stepSX * 10; i > minX; i -= 10 * stepSX) {
-            Rectangle2D bounds = axisFont.getStringBounds(Double.toString(i), context);
             Point2D.Double labelPos = xyToPoint(i, 0);
-            canvas.drawString(df.format(i), (float)(labelPos.getX() - bounds.getWidth()/2), (float)(labelPos.getY() + 25));
+            canvas.drawString(df.format(i), (float)(labelPos.getX()), (float)(labelPos.getY() + 25));
         }
 // Определить, должна ли быть видна ось Y на графике
         if (minX<=0.0 && maxX>=0.0) {
@@ -416,32 +416,11 @@ minY
     * maxY - самое "верхнее" значение Y.
     */
     protected Point2D.Double xyToPoint(double x, double y) {
-        if(rotate) {
-            // Вычисляем смещение X от самой левой точки (minX)
-            double deltaX = x - minX;
+        // Вычисляем смещение X от самой левой точки (minX)
+        double deltaX = x - minX;
 // Вычисляем смещение Y от точки верхней точки (maxY)
-            double deltaY = maxY - y;
-            return new Point2D.Double(deltaX*scale, deltaY*scale);
-        }
-        else{
-
-// Вычисляем смещение X от самой левой точки (minX)
-            double deltaX = x - minX;
-// Вычисляем смещение Y от точки верхней точки (maxY)
-            double deltaY = maxY - y;
-            return new Point2D.Double(deltaX*scale, deltaY*scale);
-        }
+        double deltaY = maxY - y;
+        return new Point2D.Double(deltaX*scaleX, deltaY*scaleY);
     }
 
-    /* Метод-помощник, возвращающий экземпляр класса Point2D.Double
-     * смещѐнный по отношению к исходному на deltaX, deltaY
-     * К сожалению, стандартного метода, выполняющего такую задачу, нет.
-     */
-    protected Point2D.Double shiftPoint(Point2D.Double src, double deltaX, double deltaY) {
-// Инициализировать новый экземпляр точки
-        Point2D.Double dest = new Point2D.Double();
-// Задать еѐ координаты как координаты существующей точки + заданные смещения
-        dest.setLocation(src.getX() + deltaX, src.getY() + deltaY);
-        return dest;
-    }
 }
