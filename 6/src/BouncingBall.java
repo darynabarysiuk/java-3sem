@@ -19,16 +19,12 @@ public class BouncingBall implements Runnable {
     private int speed;
     private double speedX;
     private double speedY;
-    private boolean pause;
 
     public void PlusX(double x){this.x += x;}
     public void PlusY(double y){this.y += y;}
 
     public double getX(){return x;}
     public double getY(){return y;}
-
-    public boolean getStatusPause(){return pause;}
-    public void setStatusPause(boolean pause){this.pause = pause;}
 
     public double getSpeedX(){return speedX;}
     public double getSpeedY(){return speedY;}
@@ -51,7 +47,7 @@ public class BouncingBall implements Runnable {
 
 // Абсолютное значение скорости зависит от диаметра мяча,
 // чем он больше, тем медленнее
-        speed = new Double(Math.round(5*MAX_SPEED / radius)).intValue();
+        speed = new Double(Math.round(10*MAX_SPEED / radius)).intValue();
         if (speed>MAX_SPEED) {
             speed = MAX_SPEED;
         }

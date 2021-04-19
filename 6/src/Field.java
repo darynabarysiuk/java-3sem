@@ -70,12 +70,12 @@ public class Field extends JPanel {
     // Синхронизированный метод проверки, может ли мяч двигаться
 // (не включен ли режим паузы?)
     public synchronized void canMove(BouncingBall b2) throws InterruptedException {
-        if (paused && b2.getStatusPause()) {
+        if (paused) {
 // Если режим паузы включен, то поток, зашедший
 // внутрь данного метода, засыпает
             wait();
         }
-        for(BouncingBall b1 : balls) {///нужно сделать правильный обмен скоростей
+        for(BouncingBall b1 : balls) {
             if(b1 != b2){
                 var x1 = b1.getX();
                 var y1 = b1.getY();
@@ -83,12 +83,13 @@ public class Field extends JPanel {
                 var y2 = b2.getY();
                 var rs = b2.getRadius()+b1.getRadius();
                 if(Math.pow(x1-x2,2) + Math.pow(y1-y2,2) <= rs*rs) {
-                    b1.setStatusPause(true);
-                    var sx1 = b1.getSpeedX();
-                    var sx2 = b2.getSpeedX();
-                    var sy1 = b1.getSpeedY();
-                    var sy2 = b2.getSpeedY();
-                    var alfa = Math.atan((y2 - y1)/(x1 - x2));///
+                    var s1 = b1.getSpeed();
+                    var s2 = b2.getSpeed();
+                    var sx1 = b1.getSpeedX()/3*s1;
+                    var sx2 = b2.getSpeedX()/3*s2;
+                    var sy1 = b1.getSpeedY()/3*s1;
+                    var sy2 = b2.getSpeedY()/3*s2;
+                    var alfa = Math.atan((y2 - y1)/(x1 - x2));
                     var sina = Math.sin(alfa);
                     var cosa = Math.cos(alfa);
                     var sxx1 = sx1*cosa-sy1*sina;
@@ -98,15 +99,20 @@ public class Field extends JPanel {
                     var k = Math.pow(b1.getRadius()/b2.getRadius(),3);
                     var sxxx1 = (2*sxx2+(k-1)*sxx1)/(1+k);
                     var sxxx2 = (2*sxx1+(1/k-1)*sxx2)/(1+1/k);
-                    b1.setSpeedX(sxxx1*cosa+syy1*sina);
-                    b1.setSpeedY(-sxxx1*sina+syy1*cosa);
-                    b2.setSpeedX(sxxx2*cosa+syy2*sina);
-                    b2.setSpeedY(-sxxx2*sina+syy2*cosa);
-                    b2.setSpeed((int) Math.round(Math.sqrt(b2.getSpeedY()*b2.getSpeedY()+b2.getSpeedX()*b2.getSpeedX())));
-                    b1.setSpeed((int) Math.round(Math.sqrt(b1.getSpeedY()*b1.getSpeedY()+b1.getSpeedX()*b1.getSpeedX())));
+                    var ends1x = sxxx1*cosa+syy1*sina;
+                    var ends1y = -sxxx1*sina+syy1*cosa;
+                    var ends2x = sxxx2*cosa+syy2*sina;
+                    var ends2y = -sxxx2*sina+syy2*cosa;
+                    var ends1 = Math.sqrt(ends1x*ends1x+ends1y*ends1y);
+                    var ends2 = Math.sqrt(ends2x*ends2x+ends2y*ends2y);
+                    b1.setSpeedX(ends1x/ends1*3);
+                    b1.setSpeedY(ends1y/ends1*3);
+                    b2.setSpeedX(ends2x/ends2*3);
+                    b2.setSpeedY(ends2y/ends2*3);
+                    b1.setSpeed((int)ends1);
+                    b2.setSpeed((int)ends2);
                     if(x2>x1)b2.PlusX(Math.abs(rs*cosa)-Math.abs(x1-x2)+1); else b2.PlusX(-Math.abs(rs*cosa)+Math.abs(x1-x2)-1);
                     if(y2>y1)b2.PlusY(Math.abs(rs*sina)-Math.abs(y1-y2)+1); else b2.PlusY(-Math.abs(rs*sina)+Math.abs(y1-y2)-1);
-                    b1.setStatusPause(false);
                 }
             }
         }
